@@ -17,5 +17,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   onContextMenu: (callback: (items: any[]) => void) => {
     ipcRenderer.on('context-menu', (_event, items) => callback(items))
-  }
+  },
+
+  saveConfig: (config: { apiKey: string; provider: string }) =>
+    ipcRenderer.invoke('config:save', config),
+  getConfigStatus: () => ipcRenderer.invoke('config:status')
 })

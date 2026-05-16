@@ -42,6 +42,43 @@ function createWindow() {
   tray = createTray(mainWindow)
 }
 
+// ---- Config management ----
+
+dotenv.config()
+
+const configPath = path.resolve(__dirname, '..', 'agent-config.json')
+
+function readConfig(): any {
+  try {
+    return JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+  } catch {
+    return { llm: { provider: 'deepseek', model: 'deepseek-chat', apiKey: '' } }
+  }
+}
+
+function writeConfig(cfg: any) {
+  fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8')
+}
+
+function buildLLMConfig(): LLMClientConfig {
+  const cfg = readConfig()
+  let apiKey = cfg.llm?.apiKey || ''
+  if (!apiKey || apiKey === 'sk-your-key-here' || apiKey.startsWith('sk-your')) {
+    apiKey = process.env[`${cfg.llm?.provider?.toUpperCase()}_API_KEY`] || apiKey
+  }
+  return {
+    provider: cfg.llm?.provider || 'deepseek',
+    apiKey,
+    model: cfg.llm?.model,
+    maxTokens: cfg.llm?.maxTokens,
+    temperature: cfg.llm?.temperature
+  }
+}
+
+let conversation = new ConversationManager(buildLLMConfig())
+
+// ---- IPC handlers ----
+
 ipcMain.handle('window:move', (_event, deltaX: number, deltaY: number) => {
   if (mainWindow) {
     const [x, y] = mainWindow.getPosition()
@@ -54,33 +91,6 @@ ipcMain.handle('window:set-size', (_event, w: number, h: number) => {
     mainWindow.setSize(w, h)
   }
 })
-
-dotenv.config()
-
-function loadAgentConfig(): LLMClientConfig {
-  const configPath = path.resolve(__dirname, '..', 'agent-config.json')
-  try {
-    const raw = fs.readFileSync(configPath, 'utf-8')
-    const parsed = JSON.parse(raw)
-    // 如果 apiKey 是占位符，尝试从环境变量读取
-    let apiKey = parsed.llm.apiKey
-    if (!apiKey || apiKey === 'sk-your-key-here' || apiKey.startsWith('sk-your')) {
-      const envKey = `${parsed.llm.provider.toUpperCase()}_API_KEY`
-      apiKey = process.env[envKey] || apiKey
-    }
-    return {
-      provider: parsed.llm.provider || 'deepseek',
-      apiKey,
-      model: parsed.llm.model,
-      maxTokens: parsed.llm.maxTokens,
-      temperature: parsed.llm.temperature
-    }
-  } catch {
-    return { provider: 'deepseek' }
-  }
-}
-
-const conversation = new ConversationManager(loadAgentConfig())
 
 ipcMain.handle('agent:send', async (_event, msg: { type: string; content: string }) => {
   const messageId = crypto.randomUUID()
@@ -97,6 +107,24 @@ ipcMain.handle('agent:send', async (_event, msg: { type: string; content: string
 
   return { id: messageId, handled: true }
 })
+
+ipcMain.handle('config:save', async (_event, data: { apiKey: string; provider?: string }) => {
+  const cfg = readConfig()
+  cfg.llm = cfg.llm || {}
+  cfg.llm.apiKey = data.apiKey
+  if (data.provider) cfg.llm.provider = data.provider
+  writeConfig(cfg)
+  conversation = new ConversationManager(buildLLMConfig())
+  return { success: true }
+})
+
+ipcMain.handle('config:status', async () => {
+  const cfg = buildLLMConfig()
+  const isValid = !!(cfg.apiKey && cfg.apiKey !== 'sk-your-key-here' && cfg.apiKey.length > 10)
+  return { configured: isValid, provider: cfg.provider }
+})
+
+// ---- App lifecycle ----
 
 app.whenReady().then(createWindow)
 

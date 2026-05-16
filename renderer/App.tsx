@@ -6,6 +6,7 @@ import { PetEngine } from './pet/engine'
 
 export default function App() {
   const chatVisible = useStore(s => s.chatVisible)
+  const setPetState = useStore(s => s.setPetState)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<PetEngine | null>(null)
 
@@ -19,9 +20,15 @@ export default function App() {
     }
   }, [])
 
+  const updatePetState = (state: string) => {
+    setPetState(state)
+    engineRef.current?.setAnimation(state)
+  }
+
   return (
     <div className="w-full h-full relative">
-      <DesktopPet />
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+      <DesktopPet onPetState={updatePetState} />
       {chatVisible && <ChatPanel />}
     </div>
   )

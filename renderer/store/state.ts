@@ -4,30 +4,37 @@ interface AppState {
   mode: 'free' | 'focus'
   petState: string
   chatVisible: boolean
+  showSettings: boolean
   messages: { role: string; content: string; id: string }[]
   streaming: boolean
   streamContent: string
+  apiKeyConfigured: boolean
 
   setMode: (mode: 'free' | 'focus') => void
   setPetState: (state: string) => void
   toggleChat: () => void
+  toggleSettings: () => void
   addMessage: (msg: { role: string; content: string; id: string }) => void
   setStreaming: (v: boolean) => void
   appendStream: (chunk: string) => void
   commitStream: () => void
+  setApiKeyConfigured: (v: boolean) => void
 }
 
 export const useStore = create<AppState>((set) => ({
   mode: 'free',
   petState: 'idle',
   chatVisible: false,
+  showSettings: false,
   messages: [],
   streaming: false,
   streamContent: '',
+  apiKeyConfigured: false,
 
   setMode: (mode) => set({ mode }),
   setPetState: (petState) => set({ petState }),
   toggleChat: () => set(s => ({ chatVisible: !s.chatVisible })),
+  toggleSettings: () => set(s => ({ showSettings: !s.showSettings })),
   addMessage: (msg) => set(s => ({ messages: [...s.messages, msg] })),
   setStreaming: (streaming) => set({ streaming, streamContent: '' }),
   appendStream: (chunk) => set(s => ({ streamContent: s.streamContent + chunk })),
@@ -40,5 +47,6 @@ export const useStore = create<AppState>((set) => ({
       }
     }
     return { streaming: false, streamContent: '' }
-  })
+  }),
+  setApiKeyConfigured: (v) => set({ apiKeyConfigured: v })
 }))
