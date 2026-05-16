@@ -1,0 +1,10 @@
+appId: com.syberpet.app
+productName: SyberPet
+directories:
+  output: release
+win:
+  target: nsis
+mac:
+  target: dmg
+linux:
+  target: AppImage
