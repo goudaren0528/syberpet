@@ -10,19 +10,28 @@ let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
 function createWindow() {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize
+  const display = screen.getPrimaryDisplay()
+  const { width, height } = display.workAreaSize
+
+  const winW = 400
+  const winH = 500
+  const winX = Math.round((width - winW) / 2)
+  const winY = Math.round((height - winH) / 2)
+
+  console.log(`[main] screen: ${width}x${height}, window: ${winW}x${winH} at (${winX}, ${winY})`)
 
   mainWindow = new BrowserWindow({
-    width: 400,
-    height: 500,
-    x: width - 420,
-    y: height - 520,
+    width: winW,
+    height: winH,
+    x: winX,
+    y: winY,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    skipTaskbar: true,
-    resizable: false,
-    hasShadow: false,
+    skipTaskbar: false,
+    resizable: true,
+    hasShadow: true,
+    backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -30,13 +39,24 @@ function createWindow() {
     }
   })
 
-  if (process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
+  const loadURL = process.env.VITE_DEV_SERVER_URL
+  console.log(`[main] loading: ${loadURL || 'file'}`)
+
+  if (loadURL) {
+    mainWindow.loadURL(loadURL)
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
-  mainWindow.setVisibleOnAllWorkspaces(true)
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('[main] window loaded')
+  })
+
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {
+    console.error(`[main] load failed: ${code} - ${desc}`)
+  })
+
+  mainWindow.webContents.openDevTools({ mode: 'detach' })
   mainWindow.setAlwaysOnTop(true, 'screen-saver')
 
   tray = createTray(mainWindow)

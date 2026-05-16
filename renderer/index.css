@@ -37,3 +37,7 @@ html, body, #root {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 2px;
 }
+
+.fallback-bg {
+  background: radial-gradient(circle, rgba(124,58,237,0.3) 0%, transparent 70%);
+}
