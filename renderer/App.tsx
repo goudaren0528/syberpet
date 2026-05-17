@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react'
 import InputBar from './ui/InputBar'
 import SpeechBubble from './ui/SpeechBubble'
 import PetNeedsHUD from './ui/PetNeedsHUD'
+import HistoryPanel from './ui/HistoryPanel'
 import { pickPetBubble } from './pet/phrases'
 import { useStore } from './store/state'
 import { PetEngine } from './pet/engine'
@@ -41,6 +42,9 @@ export default function App() {
   })
 
   const toggleSettings = useStore(s => s.toggleSettings)
+  const toggleChat = useStore(s => s.toggleChat)
+  const showSettings = useStore(s => s.showSettings)
+  const chatVisible = useStore(s => s.chatVisible)
 
   const clearDragState = useCallback(() => {
     dragRef.current = {
@@ -167,6 +171,79 @@ export default function App() {
     e.preventDefault()
     setMenu({ x: e.clientX, y: e.clientY })
   }, [])
+
+  const openHistory = useCallback(() => {
+    if (!chatVisible) {
+      toggleChat()
+    }
+    if (showSettings) {
+      toggleSettings()
+    }
+    setMenu(null)
+  }, [chatVisible, showSettings, toggleChat, toggleSettings])
+
+  const closeMenu = useCallback(() => {
+    setMenu(null)
+  }, [])
+
+  const openSettings = useCallback(() => {
+    if (!showSettings) {
+      toggleSettings()
+    }
+    setMenu(null)
+  }, [showSettings, toggleSettings])
+
+  const closeHistory = useCallback(() => {
+    if (chatVisible) {
+      toggleChat()
+    }
+  }, [chatVisible, toggleChat])
+
+  useEffect(() => {
+    if (!chatVisible && showSettings) {
+      toggleSettings()
+    }
+  }, [chatVisible, showSettings, toggleSettings])
+
+  useEffect(() => {
+    if (!chatVisible) return
+
+    const onWindowKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeHistory()
+      }
+    }
+
+    window.addEventListener('keydown', onWindowKeyDown)
+    return () => window.removeEventListener('keydown', onWindowKeyDown)
+  }, [chatVisible, closeHistory])
+
+  useEffect(() => {
+    if (!menu) return
+
+    const onWindowPointerDown = () => {
+      closeMenu()
+    }
+
+    window.addEventListener('mousedown', onWindowPointerDown)
+    return () => window.removeEventListener('mousedown', onWindowPointerDown)
+  }, [menu, closeMenu])
+
+  const menuItems: [string, () => void][] = [
+    ['对话记录', openHistory],
+    ['设置', openSettings],
+    ['退出', () => { closeMenu(); void window.electronAPI?.quitApp?.() }]
+  ]
+
+  const stopMenuEvent = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+  }, [])
+
+  const onMenuClick = useCallback((action: () => void) => {
+    action()
+  }, [])
+
+  const canRenderHistory = chatVisible && !showSettings
 
   // Streaming chunks → keep talking
   useEffect(() => {
@@ -316,6 +393,7 @@ export default function App() {
 
       <PetNeedsHUD />
       <SpeechBubble />
+      {canRenderHistory && <HistoryPanel />}
 
       <div style={{
         position: 'absolute', top: 4, left: 156, zIndex: 999,
@@ -326,22 +404,26 @@ export default function App() {
       </div>
 
       {menu && (
-        <div style={{
-          position: 'fixed', left: menu.x, top: menu.y, zIndex: 999,
-          background: 'rgba(30,30,40,0.95)', borderRadius: 8, padding: '4px 0',
-          border: '1px solid rgba(100,100,120,0.5)', minWidth: 150,
-          backdropFilter: 'blur(12px)', fontSize: 12, color: '#e0e0e0'
-        }} onClick={() => setMenu(null)}>
-          {([
-            ['互动输入', () => {}],
-            ['切换模式', () => {}],
-            ['设置', toggleSettings],
-            ['退出', () => { void window.electronAPI?.quitApp?.() }]
-          ] as [string, () => void][]).map(([label, fn], i) => (
-            <div key={i} style={{ padding: '6px 14px', cursor: 'pointer' }}
+        <div
+          style={{
+            position: 'fixed', left: menu.x, top: menu.y, zIndex: 999,
+            background: 'rgba(30,30,40,0.95)', borderRadius: 8, padding: '4px 0',
+            border: '1px solid rgba(100,100,120,0.5)', minWidth: 150,
+            backdropFilter: 'blur(12px)', fontSize: 12, color: '#e0e0e0'
+          }}
+          onMouseDown={stopMenuEvent}
+          onClick={stopMenuEvent}
+        >
+          {menuItems.map(([label, fn], i) => (
+            <div
+              key={i}
+              style={{ padding: '6px 14px', cursor: 'pointer' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              onClick={() => fn()}>{label}</div>
+              onClick={() => onMenuClick(fn)}
+            >
+              {label}
+            </div>
           ))}
         </div>
       )}

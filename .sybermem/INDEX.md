@@ -52,6 +52,8 @@
 - [change-026] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - [change-027] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - **Decision**: Phase 2 先做长期记忆闭环，再派生轻量画像并补最小 internal tools，因为这样能先把“记得住”做稳，同时避免画像和工具系统反向污染底层数据边界 (2026-05-17)
+- [change-028] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- **Change**: 右键菜单接入只读对话记录面板，并让气泡回复同步进入 `messages`，因为要保持桌宠轻交互形态的同时提供最近对话回看能力 (2026-05-17)
 <!-- add new conclusions here -->
 
 ## Change Records
@@ -84,6 +86,8 @@
 | 025 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-025-agent-config-manager-main-and-more.md) |
 | 026 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-026-agent-config-manager-main-and-more.md) |
 | 027 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-027-agent-config-manager-main-and-more.md) |
+| 028 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-028-agent-config-manager-main-and-more.md) |
+| 029 | 2026-05-17 | 右键只读历史面板接入，并让气泡回复同步进入记录 | implemented | [change-029](changes/2026-05-17-029-read-only-history-panel.md) |
 <!-- add new records here -->
 
 ## Decision Records

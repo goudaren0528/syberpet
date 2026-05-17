@@ -116,6 +116,7 @@ export const useStore = create<AppState>((set) => ({
       return { dialoguePhase: 'idle', streaming: false, hasReceivedFirstChunk: false, streamContent: '' }
     }
     return {
+      messages: [...s.messages, { role: 'assistant', content: text, id: crypto.randomUUID() }],
       petBubble: {
         text,
         source: 'ai',
