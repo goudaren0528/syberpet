@@ -58,6 +58,7 @@
 - [change-031] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - [change-032] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - **Change**: 接入规则型属性增长并补充 `todo.md` 进度文件，因为体验骨架需要先建立可解释的轻养成反馈，并把后续任务与 design/plan 关联起来持续推进 (2026-05-17)
+- [change-034] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 <!-- add new conclusions here -->
 
 ## Change Records
@@ -96,6 +97,7 @@
 | 031 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-031-agent-config-manager-main-and-more.md) |
 | 032 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-032-agent-config-manager-main-and-more.md) |
 | 033 | 2026-05-17 | 规则型属性增长接入，并补充进度跟踪 | implemented | [change-033](changes/2026-05-17-033-rule-based-pet-stat-rewards-and-progress-tracking.md) |
+| 034 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-034-agent-config-manager-main.md) |
 <!-- add new records here -->
 
 ## Decision Records

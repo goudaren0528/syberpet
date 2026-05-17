@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Tray, screen, ipcMain } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import { randomUUID } from 'crypto'
 import dotenv from 'dotenv'
 import { createTray } from './tray'
 import { ConversationManager } from '../agent/conversation/manager'
@@ -192,7 +193,7 @@ ipcMain.handle('window:set-size', (_event, w: number, h: number) => {
 })
 
 ipcMain.handle('agent:send', async (_event, msg: { type: string; content: string }) => {
-  const messageId = crypto.randomUUID()
+  const messageId = randomUUID()
 
   if (msg.type === 'user-chat') {
     const generator = conversation.chat(msg.content)

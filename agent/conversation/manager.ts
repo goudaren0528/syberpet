@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { LLMClient, LLMClientConfig } from '../llm/client'
 import { ShortTermMemory } from '../memory/short-term'
 import { ChatMessage } from '../../shared/types'
@@ -21,7 +22,7 @@ export class ConversationManager {
 
   async *chat(userInput: string): AsyncGenerator<string, string, unknown> {
     const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       role: 'user',
       content: userInput,
       timestamp: Date.now()
@@ -43,7 +44,7 @@ export class ConversationManager {
     }
 
     const assistantMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       role: 'assistant',
       content: fullContent,
       timestamp: Date.now()
