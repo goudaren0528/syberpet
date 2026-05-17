@@ -3,4 +3,17 @@ dist/
 dist-electron/
 release/
 .env
+.env.*
 *.log
+
+# Local Claude / agent workspace files
+.claude/
+
+# Local SyberMem runtime state
+.sybermem/.auto-change-state.json
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
