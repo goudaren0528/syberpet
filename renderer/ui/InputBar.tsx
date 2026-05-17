@@ -115,7 +115,7 @@ export default function InputBar() {
 
   if (showSettings) {
     return (
-      <div style={shell} onMouseDown={stop} onClick={stop}>
+      <div key="settings" style={shell} onMouseDown={stop} onClick={stop}>
         <input
           type="password"
           value={apiKeyInput}
@@ -151,7 +151,7 @@ export default function InputBar() {
   }
 
   return (
-    <div style={shell} onMouseDown={stop} onClick={stop}>
+    <div key="chat" style={shell} onMouseDown={stop} onClick={stop}>
       <input
         ref={inputRef}
         style={inputStyle}

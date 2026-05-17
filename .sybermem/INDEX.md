@@ -36,6 +36,8 @@
 - [change-014] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - [change-015] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - **Bug fix**: 透明无边框窗口拖动时若原生层偷偷放大内容区，就在 main process 用 `setContentSize` 纠正到固定 400x500，因为问题在窗口层而不是 UI 层 (2026-05-17)
+- [change-016] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- **Bug fix**: `InputBar` 聊天态与设置态使用不同 key 强制重新挂载，因为两个语义不同的 input 被 React 复用后会触发 uncontrolled → controlled 警告 (2026-05-17)
 <!-- add new conclusions here -->
 
 ## Change Records
@@ -56,6 +58,7 @@
 | 013 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-013-main-preload-app-and-more.md) |
 | 014 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-014-main-preload-app-and-more.md) |
 | 015 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-015-main-preload-app-and-more.md) |
+| 016 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-016-inputbar.md) |
 <!-- add new records here -->
 
 ## Decision Records
@@ -77,4 +80,5 @@
 | 003 | 2026-05-17 | ChatPanel 关闭按钮点击冒泡导致聊天面板立即重新打开 | resolved | [bug-003](bugs/2026-05-17-003-chat-click-bubbling-reopen.md) |
 | 004 | 2026-05-17 | 透明无边框窗口拖动时坐标漂移与跟手不稳 | resolved | [bug-004](bugs/2026-05-17-004-window-drag-drift-and-flicker.md) |
 | 005 | 2026-05-17 | 透明无边框窗口拖动时窗口尺寸在移动过程中持续膨胀 | resolved | [bug-005](bugs/2026-05-17-005-transparent-window-resizes-during-drag.md) |
+| 006 | 2026-05-17 | InputBar 切换设置时复用 input 节点触发受控状态警告 | resolved | [bug-006](bugs/2026-05-17-006-inputbar-controlled-uncontrolled-toggle.md) |
 <!-- add new records here -->
