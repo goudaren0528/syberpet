@@ -11,6 +11,7 @@ const PET_STATE_SAVE_DEBOUNCE_MS = 1500
 
 export default function App() {
   const streaming = useStore(s => s.streaming)
+  const dialoguePhase = useStore(s => s.dialoguePhase)
   const petState = useStore(s => s.petState)
   const setPetState = useStore(s => s.setPetState)
   const apiKeyConfigured = useStore(s => s.apiKeyConfigured)
@@ -93,17 +94,20 @@ export default function App() {
     engineRef.current?.setAnimation(petState)
   }, [petState])
 
-  // Wire streaming → talking state
-  const prevStreaming = useRef(false)
+  // Wire dialogue phase → pet animation state
   useEffect(() => {
-    if (streaming && !prevStreaming.current) {
+    if (dialoguePhase === 'thinking') {
+      setPetState('thinking')
+      return
+    }
+
+    if (dialoguePhase === 'streaming') {
       setPetState('talking')
+      return
     }
-    if (!streaming && prevStreaming.current) {
-      setPetState(petNeeds.energy < 25 ? 'sleeping' : 'idle')
-    }
-    prevStreaming.current = streaming
-  }, [streaming, setPetState, petNeeds.energy])
+
+    setPetState(petNeeds.energy < 25 ? 'sleeping' : 'idle')
+  }, [dialoguePhase, petNeeds.energy, setPetState])
 
   useEffect(() => {
     const onWindowMouseUp = () => {

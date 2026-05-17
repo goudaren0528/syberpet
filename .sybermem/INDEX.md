@@ -42,6 +42,14 @@
 - [change-018] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - **Change**: `CLAUDE.md` 重构为项目工作规范并提炼出通用模板，因为需要把搜索前置、验证、commit、README 同步和 SyberMem 记录沉淀为可复用协作约束 (2026-05-17)
 - [change-020] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-021] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-022] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- **Requirement**: SyberPet 下一阶段先实现体验骨架——thinking→talking 节奏、右键可见的只读对话记录、规则型属性增长与一个猜拳玩法样板，因为要在不回退成重聊天面板的前提下增强陪伴和养成反馈 (2026-05-17)
+- [change-023] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-024] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-025] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- **Bug fix**: 对话节奏改为 `dialoguePhase` 单一来源，并清理 `InputBar` 重复声明与旧 `streaming -> talking` 残留逻辑，因为 thinking→talking 必须只在首个 chunk 到达时切换 (2026-05-17)
+- [change-026] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 <!-- add new conclusions here -->
 
 ## Change Records
@@ -67,6 +75,12 @@
 | 018 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-018-agent-config-main.md) |
 | 019 | 2026-05-17 | 项目工作规范重构，并提炼可复用通用模板 | implemented | [link](changes/2026-05-17-019-working-rules-and-generic-template.md) |
 | 020 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-020-agent-config-manager-main-and-more.md) |
+| 021 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-021-agent-config-manager-main.md) |
+| 022 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-022-agent-config-manager-main-and-more.md) |
+| 023 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-023-agent-config-manager-main-and-more.md) |
+| 024 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-024-agent-config-manager-main-and-more.md) |
+| 025 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-025-agent-config-manager-main-and-more.md) |
+| 026 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-026-agent-config-manager-main-and-more.md) |
 <!-- add new records here -->
 
 ## Decision Records
@@ -78,6 +92,7 @@
 | Number | Date | Title | Status | Link |
 |--------|------|-------|--------|------|
 | 001 | 2026-05-17 | 全面清理渲染层运行时错误与 IPC 交互边界 | confirmed | [requirement-001](requirements/2026-05-17-001-renderer-runtime-cleanup.md) |
+| 002 | 2026-05-17 | 体验骨架：对话节奏、历史回看、轻养成与猜拳样板 | confirmed | [requirement-002](requirements/2026-05-17-002-experience-skeleton-chat-history-and-light-play.md) |
 <!-- add new records here -->
 
 ## Bug Records
@@ -89,4 +104,5 @@
 | 004 | 2026-05-17 | 透明无边框窗口拖动时坐标漂移与跟手不稳 | resolved | [bug-004](bugs/2026-05-17-004-window-drag-drift-and-flicker.md) |
 | 005 | 2026-05-17 | 透明无边框窗口拖动时窗口尺寸在移动过程中持续膨胀 | resolved | [bug-005](bugs/2026-05-17-005-transparent-window-resizes-during-drag.md) |
 | 006 | 2026-05-17 | InputBar 切换设置时复用 input 节点触发受控状态警告 | resolved | [bug-006](bugs/2026-05-17-006-inputbar-controlled-uncontrolled-toggle.md) |
+| 007 | 2026-05-17 | 对话阶段拆分后 InputBar 重复声明与 talking 过早切换 | resolved | [bug-007](bugs/2026-05-17-007-dialogue-phase-split-and-inputbar-redeclare.md) |
 <!-- add new records here -->

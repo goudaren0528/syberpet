@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 export type PetState = 'idle' | 'sleeping' | 'talking' | 'thinking' | 'working'
+export type DialoguePhase = 'idle' | 'thinking' | 'streaming'
 export type BubbleSource = 'preset' | 'ai' | 'need'
 
 export interface ChatMessage {
@@ -29,9 +30,11 @@ interface AppState {
   chatVisible: boolean
   showSettings: boolean
   messages: ChatMessage[]
+  dialoguePhase: DialoguePhase
   streaming: boolean
   streamContent: string
   apiKeyConfigured: boolean
+  hasReceivedFirstChunk: boolean
   petBubble: PetBubble | null
   petNeeds: PetNeeds
 
@@ -40,6 +43,7 @@ interface AppState {
   toggleChat: () => void
   toggleSettings: () => void
   addMessage: (msg: ChatMessage) => void
+  setDialoguePhase: (phase: DialoguePhase) => void
   setStreaming: (v: boolean) => void
   appendStream: (chunk: string) => void
   commitStream: () => void
@@ -69,9 +73,11 @@ export const useStore = create<AppState>((set) => ({
   chatVisible: false,
   showSettings: false,
   messages: [],
+  dialoguePhase: 'idle',
   streaming: false,
   streamContent: '',
   apiKeyConfigured: false,
+  hasReceivedFirstChunk: false,
   petBubble: null,
   petNeeds: DEFAULT_PET_NEEDS,
 
@@ -80,22 +86,34 @@ export const useStore = create<AppState>((set) => ({
   toggleChat: () => set((s) => ({ chatVisible: !s.chatVisible })),
   toggleSettings: () => set((s) => ({ showSettings: !s.showSettings })),
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
-  setStreaming: (streaming) => set({ streaming, streamContent: '' }),
-  appendStream: (chunk) => set((s) => ({ streamContent: s.streamContent + chunk })),
+  setDialoguePhase: (dialoguePhase) => set({ dialoguePhase }),
+  setStreaming: (streaming) => set({
+    streaming,
+    dialoguePhase: streaming ? 'thinking' : 'idle',
+    hasReceivedFirstChunk: false,
+    streamContent: ''
+  }),
+  appendStream: (chunk) => set((s) => ({
+    streamContent: s.streamContent + chunk,
+    dialoguePhase: 'streaming',
+    hasReceivedFirstChunk: true
+  })),
   commitStream: () => set((s) => {
     if (s.streamContent.trim()) {
       return {
         messages: [...s.messages, { role: 'assistant', content: s.streamContent, id: crypto.randomUUID() }],
+        dialoguePhase: 'idle',
         streaming: false,
+        hasReceivedFirstChunk: false,
         streamContent: ''
       }
     }
-    return { streaming: false, streamContent: '' }
+    return { dialoguePhase: 'idle', streaming: false, hasReceivedFirstChunk: false, streamContent: '' }
   }),
   commitStreamToBubble: () => set((s) => {
     const text = s.streamContent.trim()
     if (!text) {
-      return { streaming: false, streamContent: '' }
+      return { dialoguePhase: 'idle', streaming: false, hasReceivedFirstChunk: false, streamContent: '' }
     }
     return {
       petBubble: {
@@ -104,7 +122,9 @@ export const useStore = create<AppState>((set) => ({
         visible: true,
         createdAt: Date.now()
       },
+      dialoguePhase: 'idle',
       streaming: false,
+      hasReceivedFirstChunk: false,
       streamContent: ''
     }
   }),

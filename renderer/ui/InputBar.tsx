@@ -46,12 +46,90 @@ export default function InputBar() {
   const [saving, setSaving] = useState(false)
 
   const streaming = useStore((s) => s.streaming)
+  const dialoguePhase = useStore((s) => s.dialoguePhase)
   const showSettings = useStore((s) => s.showSettings)
   const toggleSettings = useStore((s) => s.toggleSettings)
   const setStreaming = useStore((s) => s.setStreaming)
   const appendStream = useStore((s) => s.appendStream)
   const commitStreamToBubble = useStore((s) => s.commitStreamToBubble)
   const setApiKeyConfigured = useStore((s) => s.setApiKeyConfigured)
+  const addMessage = useStore((s) => s.addMessage)
+  const setDialoguePhase = useStore((s) => s.setDialoguePhase)
+
+  const isBusy = dialoguePhase !== 'idle'
+  const isThinking = dialoguePhase === 'thinking'
+  const isStreaming = dialoguePhase === 'streaming'
+
+  const chatPlaceholder = isThinking
+    ? 'SyberPet 正在思考…'
+    : isStreaming
+      ? 'SyberPet 正在回复…'
+      : '和 SyberPet 说点什么…'
+
+  const loadingLabel = isThinking ? '思考中' : '发送'
+
+  const createMessageId = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID()
+    }
+    return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  }
+
+  const normalizeAfterReply = () => {
+    window.setTimeout(() => setDialoguePhase('idle'), 0)
+  }
+
+  const handleSendFailure = (error: unknown) => {
+    console.error('[InputBar] sendToAgent failed:', error)
+    setDialoguePhase('idle')
+    commitStreamToBubble()
+  }
+
+  const handleFallbackReply = () => {
+    window.setTimeout(() => {
+      appendStream('你好呀主人~ (｡･ω･｡)ﾉ♡ 请在设置中填入DeepSeek API Key即可接入AI~')
+      window.setTimeout(() => {
+        commitStreamToBubble()
+        normalizeAfterReply()
+      }, 100)
+    }, 500)
+  }
+
+  const stop = useCallback((e: React.MouseEvent | React.KeyboardEvent | React.FocusEvent) => {
+    e.stopPropagation()
+  }, [])
+
+  useEffect(() => {
+    if (dialoguePhase === 'streaming') {
+      return
+    }
+
+    if (!streaming && dialoguePhase === 'thinking') {
+      setDialoguePhase('idle')
+    }
+  }, [dialoguePhase, setDialoguePhase, streaming])
+
+  useEffect(() => {
+    if (!isBusy) return
+
+    const api = window.electronAPI
+    const offStream = api?.onAgentStream?.((chunk: string) => appendStream(chunk))
+    const offStreamEnd = api?.onAgentStreamEnd?.(() => {
+      commitStreamToBubble()
+      normalizeAfterReply()
+    })
+
+    return () => {
+      offStream?.()
+      offStreamEnd?.()
+    }
+  }, [appendStream, commitStreamToBubble, isBusy, setDialoguePhase])
+
+  useEffect(() => {
+    if (dialoguePhase === 'thinking') {
+      inputRef.current?.blur()
+    }
+  }, [dialoguePhase])
 
   useEffect(() => {
     const api = window.electronAPI
@@ -60,17 +138,6 @@ export default function InputBar() {
       if (st?.model) setModelInput(st.model)
     })
   }, [setApiKeyConfigured])
-
-  useEffect(() => {
-    const api = window.electronAPI
-    const offStream = api?.onAgentStream?.((chunk: string) => appendStream(chunk))
-    const offStreamEnd = api?.onAgentStreamEnd?.(() => commitStreamToBubble())
-
-    return () => {
-      offStream?.()
-      offStreamEnd?.()
-    }
-  }, [appendStream, commitStreamToBubble])
 
   const saveConfig = useCallback(async () => {
     if (!apiKeyInput.trim()) return
@@ -92,26 +159,21 @@ export default function InputBar() {
 
   const sendMessage = useCallback(() => {
     const input = inputRef.current
-    if (!input?.value.trim() || streaming) return
+    if (!input?.value.trim() || isBusy) return
 
     const content = input.value.trim()
     input.value = ''
+
+    addMessage({ role: 'user', content, id: createMessageId() })
     setStreaming(true)
 
     if (window.electronAPI?.sendToAgent) {
-      window.electronAPI.sendToAgent({ type: 'user-chat', content })
+      void window.electronAPI.sendToAgent({ type: 'user-chat', content }).catch(handleSendFailure)
       return
     }
 
-    window.setTimeout(() => {
-      appendStream('你好呀主人~ (｡･ω･｡)ﾉ♡ 请在设置中填入DeepSeek API Key即可接入AI~')
-      window.setTimeout(() => commitStreamToBubble(), 100)
-    }, 500)
-  }, [appendStream, commitStreamToBubble, setStreaming, streaming])
-
-  const stop = useCallback((e: React.MouseEvent | React.KeyboardEvent | React.FocusEvent) => {
-    e.stopPropagation()
-  }, [])
+    handleFallbackReply()
+  }, [addMessage, handleFallbackReply, handleSendFailure, isBusy, setStreaming])
 
   if (showSettings) {
     return (
@@ -155,16 +217,16 @@ export default function InputBar() {
       <input
         ref={inputRef}
         style={inputStyle}
-        placeholder={streaming ? 'SyberPet 正在回复…' : '和 SyberPet 说点什么…'}
+        placeholder={chatPlaceholder}
         onFocus={stop}
         onKeyDown={(e) => {
           stop(e)
           if (e.key === 'Enter') sendMessage()
         }}
-        disabled={streaming}
+        disabled={isBusy}
       />
-      <button style={buttonStyle} onClick={sendMessage} disabled={streaming}>
-        发送
+      <button style={buttonStyle} onClick={sendMessage} disabled={isBusy}>
+        {loadingLabel}
       </button>
       <button style={buttonStyle} onClick={toggleSettings}>
         设置
