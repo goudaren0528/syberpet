@@ -6,20 +6,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   sendToAgent: (msg: any) => ipcRenderer.invoke('agent:send', msg),
   onAgentMessage: (callback: (msg: any) => void) => {
-    ipcRenderer.on('agent:message', (_event, msg) => callback(msg))
+    const listener = (_event: Electron.IpcRendererEvent, msg: any) => callback(msg)
+    ipcRenderer.on('agent:message', listener)
+    return () => ipcRenderer.removeListener('agent:message', listener)
   },
   onAgentStream: (callback: (chunk: string) => void) => {
-    ipcRenderer.on('agent:stream', (_event, chunk: string) => callback(chunk))
+    const listener = (_event: Electron.IpcRendererEvent, chunk: string) => callback(chunk)
+    ipcRenderer.on('agent:stream', listener)
+    return () => ipcRenderer.removeListener('agent:stream', listener)
   },
   onAgentStreamEnd: (callback: () => void) => {
-    ipcRenderer.on('agent:stream-end', () => callback())
+    const listener = () => callback()
+    ipcRenderer.on('agent:stream-end', listener)
+    return () => ipcRenderer.removeListener('agent:stream-end', listener)
   },
 
   onContextMenu: (callback: (items: any[]) => void) => {
-    ipcRenderer.on('context-menu', (_event, items) => callback(items))
+    const listener = (_event: Electron.IpcRendererEvent, items: any[]) => callback(items)
+    ipcRenderer.on('context-menu', listener)
+    return () => ipcRenderer.removeListener('context-menu', listener)
   },
 
-  saveConfig: (config: { apiKey: string; provider: string }) =>
+  saveConfig: (config: { apiKey: string; provider: string; model: string }) =>
     ipcRenderer.invoke('config:save', config),
-  getConfigStatus: () => ipcRenderer.invoke('config:status')
+  getConfigStatus: () => ipcRenderer.invoke('config:status'),
+  generatePetBubble: () => ipcRenderer.invoke('pet:generate-bubble'),
+  loadPetState: () => ipcRenderer.invoke('pet:load-state'),
+  savePetState: (state: any) => ipcRenderer.invoke('pet:save-state', state)
 })

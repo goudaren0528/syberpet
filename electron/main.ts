@@ -4,33 +4,40 @@ import fs from 'fs'
 import dotenv from 'dotenv'
 import { createTray } from './tray'
 import { ConversationManager } from '../agent/conversation/manager'
+import { LLMClient } from '../agent/llm/client'
 import type { LLMClientConfig } from '../agent/llm/client'
+import type { LLMMessage } from '../agent/llm/types'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+const WIN_W = 400
+const WIN_H = 500
 
 function createWindow() {
   const display = screen.getPrimaryDisplay()
   const { width, height } = display.workAreaSize
 
-  const winW = 400
-  const winH = 500
-  const winX = Math.round((width - winW) / 2)
-  const winY = Math.round((height - winH) / 2)
+  const winX = Math.round((width - WIN_W) / 2)
+  const winY = Math.round((height - WIN_H) / 2)
 
-  console.log(`[main] screen: ${width}x${height}, window: ${winW}x${winH} at (${winX}, ${winY})`)
+  console.log(`[main] screen: ${width}x${height}, window: ${WIN_W}x${WIN_H} at (${winX}, ${winY})`)
 
   mainWindow = new BrowserWindow({
-    width: winW,
-    height: winH,
+    width: WIN_W,
+    height: WIN_H,
+    minWidth: WIN_W,
+    maxWidth: WIN_W,
+    minHeight: WIN_H,
+    maxHeight: WIN_H,
     x: winX,
     y: winY,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: false,
-    resizable: true,
-    hasShadow: true,
+    resizable: false,
+    thickFrame: false,
+    hasShadow: false,
     backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -67,6 +74,14 @@ function createWindow() {
 dotenv.config()
 
 const configPath = path.resolve(__dirname, '..', 'agent-config.json')
+const petStatePath = path.join(app.getPath('userData'), 'pet-data.json')
+
+interface PetStateData {
+  hunger: number
+  mood: number
+  energy: number
+  lastUpdatedAt: number
+}
 
 function readConfig(): any {
   try {
@@ -78,6 +93,20 @@ function readConfig(): any {
 
 function writeConfig(cfg: any) {
   fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8')
+}
+
+function readPetState(): PetStateData | null {
+  try {
+    if (!fs.existsSync(petStatePath)) return null
+    return JSON.parse(fs.readFileSync(petStatePath, 'utf-8')) as PetStateData
+  } catch (error) {
+    console.error('[main] readPetState failed:', error)
+    return null
+  }
+}
+
+function writePetState(state: PetStateData) {
+  fs.writeFileSync(petStatePath, JSON.stringify(state, null, 2), 'utf-8')
 }
 
 function buildLLMConfig(): LLMClientConfig {
@@ -93,6 +122,38 @@ function buildLLMConfig(): LLMClientConfig {
     maxTokens: cfg.llm?.maxTokens,
     temperature: cfg.llm?.temperature
   }
+}
+
+function hasConfiguredApiKey() {
+  const cfg = buildLLMConfig()
+  return !!(cfg.apiKey && cfg.apiKey !== 'sk-your-key-here' && cfg.apiKey.length > 10)
+}
+
+async function generatePetBubbleText() {
+  const cfg = buildLLMConfig()
+  const llm = new LLMClient({
+    ...cfg,
+    maxTokens: Math.min(cfg.maxTokens ?? 80, 80),
+    temperature: 0.9
+  })
+
+  const messages: LLMMessage[] = [
+    {
+      role: 'system',
+      content: '你是桌宠 SyberPet。请只生成一句 12 到 28 个中文字符左右的简短自言自语，不要使用引号，不要分点，不要解释，不要提到你是AI。语气可爱、轻松、像在陪伴主人。'
+    },
+    {
+      role: 'user',
+      content: '请给我一句适合桌宠随机冒泡的短句。'
+    }
+  ]
+
+  let fullText = ''
+  for await (const chunk of llm.chat(messages)) {
+    fullText += chunk
+  }
+
+  return fullText.trim().replace(/[\r\n]+/g, ' ').slice(0, 80)
 }
 
 let conversation = new ConversationManager(buildLLMConfig())
@@ -143,6 +204,26 @@ ipcMain.handle('config:status', async () => {
   const cfg = buildLLMConfig()
   const isValid = !!(cfg.apiKey && cfg.apiKey !== 'sk-your-key-here' && cfg.apiKey.length > 10)
   return { configured: isValid, provider: cfg.provider, model: cfg.model }
+})
+
+ipcMain.handle('pet:generate-bubble', async () => {
+  if (!hasConfiguredApiKey()) return { text: '' }
+  try {
+    const text = await generatePetBubbleText()
+    return { text }
+  } catch (error) {
+    console.error('[main] generatePetBubble failed:', error)
+    return { text: '' }
+  }
+})
+
+ipcMain.handle('pet:load-state', async () => {
+  return readPetState()
+})
+
+ipcMain.handle('pet:save-state', async (_event, state: PetStateData) => {
+  writePetState(state)
+  return { success: true }
 })
 
 // ---- App lifecycle ----
