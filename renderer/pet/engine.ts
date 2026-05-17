@@ -3,8 +3,7 @@ import * as PIXI from 'pixi.js'
 export class PetEngine {
   private app: PIXI.Application | null = null
   private canvas: HTMLCanvasElement
-  private body: PIXI.Graphics | null = null
-  private fallbackEl: HTMLDivElement | null = null
+  private body: PIXI.Container | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -15,8 +14,9 @@ export class PetEngine {
       const width = this.canvas.clientWidth || 400
       const height = this.canvas.clientHeight || 500
 
-      this.app = new PIXI.Application({
-        view: this.canvas,
+      this.app = new PIXI.Application()
+      await this.app.init({
+        canvas: this.canvas,
         width,
         height,
         backgroundAlpha: 0,
@@ -25,101 +25,76 @@ export class PetEngine {
         autoDensity: true
       })
 
-      this.drawPet(width, height)
+      this.body = new PIXI.Container()
+      this.drawPet(this.body, width, height)
+      this.app.stage.addChild(this.body)
 
       this.app.ticker.add(() => {
         if (this.body && !this.body.destroyed) {
           const s = 1 + Math.sin(Date.now() * 0.003) * 0.03
-          this.body.scale.set(s, s)
+          this.body.scale.set(s)
           this.body.alpha = 0.85 + Math.sin(Date.now() * 0.002) * 0.1
         }
       })
+
+      console.log('[PetView] PixiJS OK')
     } catch (e) {
-      console.error('[PetEngine] init failed, using DOM fallback:', e)
-      this.createFallback()
+      console.error('[PetEngine] init failed:', e)
+      throw e
     }
   }
 
-  private drawPet(w: number, h: number) {
+  private drawPet(container: PIXI.Container, w: number, h: number) {
     const cx = w / 2
     const cy = h / 2
+    const g = new PIXI.Graphics()
 
-    this.body = new PIXI.Graphics()
+    // Body
+    g.fill({ color: 0x7c3aed, alpha: 1 })
+    g.ellipse(cx, cy - 10, 80, 90)
 
-    this.body.beginFill(0x7c3aed, 1)
-    this.body.drawEllipse(cx, cy - 10, 80, 90)
-    this.body.endFill()
+    // Left ear
+    g.poly([
+      cx - 55, cy - 70,
+      cx - 25, cy - 90,
+      cx - 10, cy - 55
+    ])
 
-    this.body.beginFill(0x7c3aed, 1)
-    this.body.moveTo(cx - 55, cy - 70)
-    this.body.lineTo(cx - 25, cy - 90)
-    this.body.lineTo(cx - 10, cy - 55)
-    this.body.closePath()
-    this.body.endFill()
-    this.body.beginFill(0x7c3aed, 1)
-    this.body.moveTo(cx + 55, cy - 70)
-    this.body.lineTo(cx + 25, cy - 90)
-    this.body.lineTo(cx + 10, cy - 55)
-    this.body.closePath()
-    this.body.endFill()
+    // Right ear
+    g.poly([
+      cx + 55, cy - 70,
+      cx + 25, cy - 90,
+      cx + 10, cy - 55
+    ])
 
-    this.body.beginFill(0xffffff, 1)
-    this.body.drawEllipse(cx - 25, cy - 15, 18, 22)
-    this.body.drawEllipse(cx + 25, cy - 15, 18, 22)
-    this.body.endFill()
+    // Eyes - white
+    g.fill({ color: 0xffffff, alpha: 1 })
+    g.ellipse(cx - 25, cy - 15, 18, 22)
+    g.ellipse(cx + 25, cy - 15, 18, 22)
 
-    this.body.beginFill(0x1e1b4b, 1)
-    this.body.drawEllipse(cx - 22, cy - 12, 8, 12)
-    this.body.drawEllipse(cx + 22, cy - 12, 8, 12)
-    this.body.endFill()
+    // Pupils
+    g.fill({ color: 0x1e1b4b, alpha: 1 })
+    g.ellipse(cx - 22, cy - 12, 8, 12)
+    g.ellipse(cx + 22, cy - 12, 8, 12)
 
-    this.body.beginFill(0xffffff, 0.8)
-    this.body.drawEllipse(cx - 26, cy - 18, 5, 6)
-    this.body.drawEllipse(cx + 18, cy - 18, 5, 6)
-    this.body.endFill()
+    // Eye shine
+    g.fill({ color: 0xffffff, alpha: 0.8 })
+    g.ellipse(cx - 26, cy - 18, 5, 6)
+    g.ellipse(cx + 18, cy - 18, 5, 6)
 
-    this.body.lineStyle(3, 0x1e1b4b, 0.8)
-    this.body.arc(cx, cy + 10, 15, 0.2, Math.PI - 0.2)
-    this.body.lineStyle(0)
+    // Mouth
+    g.stroke({ color: 0x1e1b4b, alpha: 0.8, width: 3 })
+    g.arc(cx, cy + 10, 15, 0.2, Math.PI - 0.2)
+    g.stroke({ width: 0 })
 
-    this.app!.stage.addChild(this.body)
+    container.addChild(g)
   }
 
-  private createFallback() {
-    this.fallbackEl = document.createElement('div')
-    this.fallbackEl.style.cssText = `
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      pointer-events: none; flex-direction: column; gap: 8px;
-    `
-    this.fallbackEl.innerHTML = `
-      <div style="
-        width: 160px; height: 160px; border-radius: 50%;
-        background: linear-gradient(135deg, #7c3aed, #a78bfa);
-        box-shadow: 0 0 40px rgba(124,58,237,0.5);
-        display: flex; align-items: center; justify-content: center;
-        animation: pet-breathe 3s ease-in-out infinite;
-      ">
-        <span style="font-size: 72px;">🐱</span>
-      </div>
-      <style>
-        @keyframes pet-breathe {
-          0%, 100% { transform: scale(1); opacity: 0.9; }
-          50% { transform: scale(1.05); opacity: 1; }
-        }
-      </style>
-    `
-    this.canvas.parentElement?.appendChild(this.fallbackEl)
-  }
-
-  setAnimation(_state: string) {
-    // Phase 2: Live2D animation state switching
-  }
-
+  setAnimation(_state: string) {}
   resize(_w: number, _h: number) {}
 
   destroy() {
-    this.body?.destroy()
+    this.body?.destroy({ children: true })
     this.app?.destroy(true)
-    this.fallbackEl?.remove()
   }
 }
