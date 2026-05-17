@@ -50,6 +50,8 @@
 - [change-025] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - **Bug fix**: 对话节奏改为 `dialoguePhase` 单一来源，并清理 `InputBar` 重复声明与旧 `streaming -> talking` 残留逻辑，因为 thinking→talking 必须只在首个 chunk 到达时切换 (2026-05-17)
 - [change-026] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-027] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- **Decision**: Phase 2 先做长期记忆闭环，再派生轻量画像并补最小 internal tools，因为这样能先把“记得住”做稳，同时避免画像和工具系统反向污染底层数据边界 (2026-05-17)
 <!-- add new conclusions here -->
 
 ## Change Records
@@ -81,11 +83,13 @@
 | 024 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-024-agent-config-manager-main-and-more.md) |
 | 025 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-025-agent-config-manager-main-and-more.md) |
 | 026 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-026-agent-config-manager-main-and-more.md) |
+| 027 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-027-agent-config-manager-main-and-more.md) |
 <!-- add new records here -->
 
 ## Decision Records
 | Number | Date | Title | Status | Link |
 |--------|------|-------|--------|------|
+| 001 | 2026-05-17 | Phase 2 采用长期记忆优先，并将画像与工具作为派生层和接口层 | decided | [decision-001](decisions/2026-05-17-001-phase-2-memory-core-first.md) |
 <!-- add new records here -->
 
 ## Requirement Records
