@@ -37,6 +37,7 @@ export default function ChatPanel() {
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [apiKeyInput, setApiKeyInput] = useState('')
+  const [modelInput, setModelInput] = useState('deepseek-v4-pro')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export default function ChatPanel() {
     const api = (window as any).electronAPI
     api?.getConfigStatus?.().then((st: any) => {
       if (st?.configured) setApiKeyConfigured(true)
+      if (st?.model) setModelInput(st.model)
     })
   }, [])
 
@@ -70,17 +72,21 @@ export default function ChatPanel() {
     }
   }, [streaming, addMessage, setStreaming, appendStream, commitStream])
 
-  const saveApiKey = useCallback(async () => {
+  const saveConfig = useCallback(async () => {
     if (!apiKeyInput.trim()) return
     setSaving(true)
     try {
-      await (window as any).electronAPI?.saveConfig?.({ apiKey: apiKeyInput.trim(), provider: 'deepseek' })
+      await (window as any).electronAPI?.saveConfig?.({
+        apiKey: apiKeyInput.trim(),
+        provider: 'deepseek',
+        model: modelInput
+      })
       setApiKeyConfigured(true)
       setApiKeyInput('')
       toggleSettings()
     } catch (e) { console.error(e) }
     setSaving(false)
-  }, [apiKeyInput, setApiKeyConfigured, toggleSettings])
+  }, [apiKeyInput, modelInput, setApiKeyConfigured, toggleSettings])
 
   useEffect(() => {
     const api = (window as any).electronAPI
@@ -104,7 +110,19 @@ export default function ChatPanel() {
           <div style={{ fontSize: 10, color: '#888', marginBottom: 4 }}>DeepSeek API Key</div>
           <input type="password" value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
                  placeholder="sk-..." style={s.input} />
-          <button onClick={saveApiKey} disabled={saving || !apiKeyInput.trim()}
+          <div style={{ fontSize: 10, color: '#888', marginBottom: 4, marginTop: 12 }}>模型</div>
+          <select value={modelInput} onChange={e => setModelInput(e.target.value)}
+            style={{
+              width: '100%', background: 'rgba(40,40,50,0.8)', borderRadius: 8,
+              border: '1px solid rgba(100,100,120,0.3)', padding: '7px 10px',
+              fontSize: 12, color: '#e0e0e0', outline: 'none', cursor: 'pointer'
+            }}>
+            <option value="deepseek-v4-pro">deepseek-v4-pro (推荐)</option>
+            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+            <option value="deepseek-chat">deepseek-chat (即将弃用)</option>
+            <option value="deepseek-reasoner">deepseek-reasoner (即将弃用)</option>
+          </select>
+          <button onClick={saveConfig} disabled={saving || !apiKeyInput.trim()}
             style={{
               width: '100%', marginTop: 12, padding: '8px', borderRadius: 8, border: 'none',
               background: apiKeyInput.trim() ? '#7c3aed' : '#444',

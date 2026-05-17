@@ -1,7 +1,7 @@
 {
   "llm": {
     "provider": "deepseek",
-    "model": "deepseek-chat",
+    "model": "deepseek-v4-pro",
     "apiKey": "sk-your-key-here",
     "maxTokens": 4096,
     "temperature": 0.7,

@@ -128,11 +128,12 @@ ipcMain.handle('agent:send', async (_event, msg: { type: string; content: string
   return { id: messageId, handled: true }
 })
 
-ipcMain.handle('config:save', async (_event, data: { apiKey: string; provider?: string }) => {
+ipcMain.handle('config:save', async (_event, data: { apiKey: string; provider?: string; model?: string }) => {
   const cfg = readConfig()
   cfg.llm = cfg.llm || {}
   cfg.llm.apiKey = data.apiKey
   if (data.provider) cfg.llm.provider = data.provider
+  if (data.model) cfg.llm.model = data.model
   writeConfig(cfg)
   conversation = new ConversationManager(buildLLMConfig())
   return { success: true }
@@ -141,7 +142,7 @@ ipcMain.handle('config:save', async (_event, data: { apiKey: string; provider?: 
 ipcMain.handle('config:status', async () => {
   const cfg = buildLLMConfig()
   const isValid = !!(cfg.apiKey && cfg.apiKey !== 'sk-your-key-here' && cfg.apiKey.length > 10)
-  return { configured: isValid, provider: cfg.provider }
+  return { configured: isValid, provider: cfg.provider, model: cfg.model }
 })
 
 // ---- App lifecycle ----

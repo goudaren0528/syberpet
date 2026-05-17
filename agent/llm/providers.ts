@@ -4,7 +4,7 @@ export const providers: Record<string, LLMProviderConfig> = {
   deepseek: {
     baseURL: 'https://api.deepseek.com/v1',
     apiKey: process.env.DEEPSEEK_API_KEY || '',
-    model: 'deepseek-chat',
+    model: 'deepseek-v4-pro',
     maxTokens: 4096,
     temperature: 0.7
   },
