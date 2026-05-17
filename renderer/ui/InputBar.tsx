@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { detectInteractionReward } from '../pet/interactionRewards'
 import { useStore } from '../store/state'
 
 const shell = {
@@ -54,6 +55,7 @@ export default function InputBar() {
   const commitStreamToBubble = useStore((s) => s.commitStreamToBubble)
   const setApiKeyConfigured = useStore((s) => s.setApiKeyConfigured)
   const addMessage = useStore((s) => s.addMessage)
+  const applyInteractionReward = useStore((s) => s.applyInteractionReward)
   const setDialoguePhase = useStore((s) => s.setDialoguePhase)
 
   const isBusy = dialoguePhase !== 'idle'
@@ -165,6 +167,7 @@ export default function InputBar() {
     input.value = ''
 
     addMessage({ role: 'user', content, id: createMessageId() })
+    applyInteractionReward(detectInteractionReward(content))
     setStreaming(true)
 
     if (window.electronAPI?.sendToAgent) {
@@ -173,7 +176,7 @@ export default function InputBar() {
     }
 
     handleFallbackReply()
-  }, [addMessage, handleFallbackReply, handleSendFailure, isBusy, setStreaming])
+  }, [addMessage, applyInteractionReward, handleFallbackReply, handleSendFailure, isBusy, setStreaming])
 
   if (showSettings) {
     return (

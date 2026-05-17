@@ -56,6 +56,7 @@ interface AppState {
   feedPet: () => void
   restPet: () => void
   improveMood: (amount: number) => void
+  applyInteractionReward: (reward: { mood: number; hunger: number; energy: number }) => void
 }
 
 const clamp = (value: number) => Math.max(0, Math.min(100, value))
@@ -190,6 +191,15 @@ export const useStore = create<AppState>((set) => ({
     petNeeds: {
       ...s.petNeeds,
       mood: clamp(s.petNeeds.mood + amount),
+      lastUpdatedAt: Date.now()
+    }
+  })),
+  applyInteractionReward: (reward) => set((s) => ({
+    petNeeds: {
+      ...s.petNeeds,
+      hunger: clamp(s.petNeeds.hunger + reward.hunger),
+      mood: clamp(s.petNeeds.mood + reward.mood),
+      energy: clamp(s.petNeeds.energy + reward.energy),
       lastUpdatedAt: Date.now()
     }
   }))
