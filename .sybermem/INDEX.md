@@ -38,6 +38,10 @@
 - **Bug fix**: 透明无边框窗口拖动时若原生层偷偷放大内容区，就在 main process 用 `setContentSize` 纠正到固定 400x500，因为问题在窗口层而不是 UI 层 (2026-05-17)
 - [change-016] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - **Bug fix**: `InputBar` 聊天态与设置态使用不同 key 强制重新挂载，因为两个语义不同的 input 被 React 复用后会触发 uncontrolled → controlled 警告 (2026-05-17)
+- [change-017] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-018] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- **Change**: `CLAUDE.md` 重构为项目工作规范并提炼出通用模板，因为需要把搜索前置、验证、commit、README 同步和 SyberMem 记录沉淀为可复用协作约束 (2026-05-17)
+- [change-020] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 <!-- add new conclusions here -->
 
 ## Change Records
@@ -59,6 +63,10 @@
 | 014 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-014-main-preload-app-and-more.md) |
 | 015 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-015-main-preload-app-and-more.md) |
 | 016 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-016-inputbar.md) |
+| 017 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-017-agent-config.md) |
+| 018 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-018-agent-config-main.md) |
+| 019 | 2026-05-17 | 项目工作规范重构，并提炼可复用通用模板 | implemented | [link](changes/2026-05-17-019-working-rules-and-generic-template.md) |
+| 020 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-020-agent-config-manager-main-and-more.md) |
 <!-- add new records here -->
 
 ## Decision Records
