@@ -31,6 +31,11 @@
 - **Bug fix**: 透明无边框窗口拖动改为基于 `screenX/screenY` 计算增量并恢复 5px 阈值 + `didDrag` 语义，以消除窗口移动时的坐标漂移并避免拖动后误触聊天切换 (2026-05-17)
 - **Change**: 主交互改为底部轻量输入条 + 宠物气泡回复，并补上 stream 监听清理与 position-only 拖动，以让桌宠交互更轻、更稳、更接近真实桌面宠物体验 (2026-05-17)
 - [change-011] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-012] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-013] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-014] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-015] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- **Bug fix**: 透明无边框窗口拖动时若原生层偷偷放大内容区，就在 main process 用 `setContentSize` 纠正到固定 400x500，因为问题在窗口层而不是 UI 层 (2026-05-17)
 <!-- add new conclusions here -->
 
 ## Change Records
@@ -47,6 +52,10 @@
 | 009 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-009-main-preload-app-and-more.md) |
 | 010 | 2026-05-17 | 轻量输入条、宠物气泡回复与拖动稳定性重构 | implemented | [link](changes/2026-05-17-010-lightweight-input-bubble-and-drag-stability.md) |
 | 011 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-011-main-preload-app-and-more.md) |
+| 012 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-012-engine-chatpanel-2026-05-17-renderer-runtime-cleanup-and-more.md) |
+| 013 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-013-main-preload-app-and-more.md) |
+| 014 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-014-main-preload-app-and-more.md) |
+| 015 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-015-main-preload-app-and-more.md) |
 <!-- add new records here -->
 
 ## Decision Records
@@ -67,4 +76,5 @@
 | 002 | 2026-05-17 | 无边框透明窗口拖动时持续变大 + 拖动与点击手势冲突 | resolved | [bug-002](bugs/2026-05-17-002-window-grows-on-drag.md) |
 | 003 | 2026-05-17 | ChatPanel 关闭按钮点击冒泡导致聊天面板立即重新打开 | resolved | [bug-003](bugs/2026-05-17-003-chat-click-bubbling-reopen.md) |
 | 004 | 2026-05-17 | 透明无边框窗口拖动时坐标漂移与跟手不稳 | resolved | [bug-004](bugs/2026-05-17-004-window-drag-drift-and-flicker.md) |
+| 005 | 2026-05-17 | 透明无边框窗口拖动时窗口尺寸在移动过程中持续膨胀 | resolved | [bug-005](bugs/2026-05-17-005-transparent-window-resizes-during-drag.md) |
 <!-- add new records here -->

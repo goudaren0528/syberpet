@@ -3,8 +3,7 @@ import { useStore } from '../store/state'
 
 const s = {
   panel: {
-    position: 'absolute' as const, right: 8, top: 8, width: 280,
-    bottom: 8,
+    position: 'absolute' as const, right: 8, top: 8, width: 280, height: 420,
     background: 'rgba(20,20,30,0.92)', borderRadius: 12,
     border: '1px solid rgba(100,100,120,0.4)',
     display: 'flex', flexDirection: 'column' as const,
@@ -95,12 +94,12 @@ export default function ChatPanel() {
   }, [appendStream, commitStream])
 
   return (
-    <div style={s.panel}>
+    <div style={s.panel} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
       <div style={s.header}>
         <span style={s.title}>SyberPet</span>
         <div style={{ display: 'flex', gap: 2 }}>
           <button style={s.btn} onClick={toggleSettings} title="设置">⚙</button>
-          <button style={s.btn} onClick={toggleChat}>✕</button>
+          <button style={s.btn} onClick={e => { e.stopPropagation(); toggleChat() }}>✕</button>
         </div>
       </div>
 

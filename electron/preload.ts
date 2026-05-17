@@ -32,5 +32,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getConfigStatus: () => ipcRenderer.invoke('config:status'),
   generatePetBubble: () => ipcRenderer.invoke('pet:generate-bubble'),
   loadPetState: () => ipcRenderer.invoke('pet:load-state'),
-  savePetState: (state: any) => ipcRenderer.invoke('pet:save-state', state)
+  savePetState: (state: any) => ipcRenderer.invoke('pet:save-state', state),
+  quitApp: () => ipcRenderer.invoke('app:quit')
 })

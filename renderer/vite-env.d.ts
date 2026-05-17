@@ -13,6 +13,7 @@ interface ElectronAPI {
   generatePetBubble: () => Promise<{ text: string }>
   loadPetState: () => Promise<{ hunger: number; mood: number; energy: number; lastUpdatedAt: number } | null>
   savePetState: (state: { hunger: number; mood: number; energy: number; lastUpdatedAt: number }) => Promise<{ success: boolean }>
+  quitApp: () => Promise<{ success: boolean }>
 }
 
 interface Window {

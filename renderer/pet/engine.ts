@@ -4,21 +4,36 @@ type PetState = 'idle' | 'sleeping' | 'talking' | 'thinking' | 'working'
 
 interface FaceParts {
   body: PIXI.Graphics
+  bodyShadow: PIXI.Graphics
+  earInnerL: PIXI.Graphics
+  earInnerR: PIXI.Graphics
+  leftEye: PIXI.Graphics
+  rightEye: PIXI.Graphics
   leftPupil: PIXI.Graphics
   rightPupil: PIXI.Graphics
   leftEyeShine: PIXI.Graphics
   rightEyeShine: PIXI.Graphics
+  leftEyeShine2: PIXI.Graphics
+  rightEyeShine2: PIXI.Graphics
+  nose: PIXI.Graphics
   mouth: PIXI.Graphics
+  whiskerL: PIXI.Graphics
+  whiskerR: PIXI.Graphics
   blushL: PIXI.Graphics
   blushR: PIXI.Graphics
+  tail: PIXI.Graphics
+  pawL: PIXI.Graphics
+  pawR: PIXI.Graphics
+  belly: PIXI.Graphics
 }
 
-const STATE_COLORS: Record<PetState, number> = {
-  idle: 0x7c3aed,
-  sleeping: 0x6d28d9,
-  talking: 0x8b5cf6,
-  thinking: 0xa78bfa,
-  working: 0x6366f1
+// Soft, friendly palette — cream cat with warm accents
+const STATE_PALETTES: Record<PetState, { body: number; bodyLight: number; accent: number }> = {
+  idle:     { body: 0xf5e6d3, bodyLight: 0xfff5eb, accent: 0xffb088 },
+  sleeping: { body: 0xe8d8c8, bodyLight: 0xf0e6da, accent: 0xdda888 },
+  talking:  { body: 0xffecd6, bodyLight: 0xfff8f0, accent: 0xffb888 },
+  thinking: { body: 0xe0d8f0, bodyLight: 0xf0ebff, accent: 0xb8a0e0 },
+  working:  { body: 0xd8e8f0, bodyLight: 0xebf4ff, accent: 0x88b8e0 },
 }
 
 export class PetEngine {
@@ -27,6 +42,8 @@ export class PetEngine {
   private container: PIXI.Container = new PIXI.Container()
   private parts: FaceParts | null = null
   private state: PetState = 'idle'
+  private destroyed = false
+  private initialized = false
   private mouseX = 0
   private mouseY = 0
   private idleTimer = 0
@@ -37,133 +54,322 @@ export class PetEngine {
   private mouthOpen = false
   private bounceOffset = 0
   private bounceVelo = 0
+  private tailPhase = 0
+  private cx = 0
+  private cy = 0
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
   }
 
-  async init() {
+  async init(): Promise<boolean> {
     const width = this.canvas.clientWidth || 400
     const height = this.canvas.clientHeight || 500
+    console.log('[PetEngine] init start, canvas:', width, 'x', height, 'destroyed:', this.destroyed)
 
     this.app = new PIXI.Application()
     await this.app.init({
       canvas: this.canvas, width, height,
       backgroundAlpha: 0, antialias: true,
-      resolution: window.devicePixelRatio || 1, autoDensity: true
+      resolution: 1, autoDensity: true
     })
 
-    const cx = width / 2
-    const cy = height / 2
+    // destroyed during async init (React strict mode double-mount)
+    if (this.destroyed) {
+      console.log('[PetEngine] init aborted — destroyed during await')
+      try { this.app.destroy(false) } catch (_) { /* noop */ }
+      this.app = null
+      return false
+    }
 
-    this.parts = this.createFace(cx, cy)
-    this.container.addChild(this.parts.body)
+    this.initialized = true
+    this.cx = width / 2
+    this.cy = height / 2 + 20
+
+    this.parts = this.createCat(this.cx, this.cy)
     this.app.stage.addChild(this.container)
     this.container.eventMode = 'none'
 
     this.app.ticker.add(() => this.tick())
-
     this.scheduleIdle()
 
-    console.log('[PetEngine] initialized, state:', this.state)
+    console.log('[PetEngine] initialized OK, children:', this.container.children.length,
+      'stage children:', this.app.stage.children.length,
+      'canvas size:', this.canvas.width, 'x', this.canvas.height)
+
+    return true
   }
 
-  private createFace(cx: number, cy: number): FaceParts {
-    const bodyColor = STATE_COLORS.idle
+  private createCat(cx: number, cy: number): FaceParts {
+    const p = STATE_PALETTES.idle
 
-    // --- Body & ears ---
+    // --- Tail (behind body) ---
+    const tail = new PIXI.Graphics()
+    this.drawTail(tail, cx, cy, p.body, 0)
+    this.container.addChild(tail)
+
+    // --- Body shadow ---
+    const bodyShadow = new PIXI.Graphics()
+    bodyShadow.ellipse(cx, cy + 80, 65, 12)
+    bodyShadow.fill({ color: 0x000000, alpha: 0.06 })
+    this.container.addChild(bodyShadow)
+
+    // --- Main body ---
     const body = new PIXI.Graphics()
-    body.fill({ color: bodyColor, alpha: 1 })
-    body.ellipse(cx, cy - 10, 80, 90)
-    body.fill({ color: bodyColor, alpha: 1 })
-    body.poly([cx - 55, cy - 70, cx - 25, cy - 90, cx - 10, cy - 55])
-    body.fill({ color: bodyColor, alpha: 1 })
-    body.poly([cx + 55, cy - 70, cx + 25, cy - 90, cx + 10, cy - 55])
+    this.drawBodyShape(body, cx, cy, p.body)
+    this.container.addChild(body)
+
+    // --- Ear inners ---
+    const earInnerL = new PIXI.Graphics()
+    earInnerL.poly([cx - 46, cy - 68, cx - 26, cy - 80, cx - 16, cy - 58])
+    earInnerL.fill({ color: p.accent, alpha: 0.5 })
+    this.container.addChild(earInnerL)
+
+    const earInnerR = new PIXI.Graphics()
+    earInnerR.poly([cx + 46, cy - 68, cx + 26, cy - 80, cx + 16, cy - 58])
+    earInnerR.fill({ color: p.accent, alpha: 0.5 })
+    this.container.addChild(earInnerR)
+
+    // --- Belly patch ---
+    const belly = new PIXI.Graphics()
+    belly.ellipse(cx, cy + 20, 45, 40)
+    belly.fill({ color: p.bodyLight, alpha: 0.7 })
+    this.container.addChild(belly)
+
+    // --- Paws ---
+    const pawL = new PIXI.Graphics()
+    pawL.ellipse(cx - 30, cy + 65, 18, 12)
+    pawL.fill({ color: p.bodyLight, alpha: 0.9 })
+    // Toe beans
+    pawL.circle(cx - 35, cy + 63, 4)
+    pawL.circle(cx - 28, cy + 61, 4)
+    pawL.circle(cx - 25, cy + 67, 4)
+    pawL.fill({ color: p.accent, alpha: 0.3 })
+    this.container.addChild(pawL)
+
+    const pawR = new PIXI.Graphics()
+    pawR.ellipse(cx + 30, cy + 65, 18, 12)
+    pawR.fill({ color: p.bodyLight, alpha: 0.9 })
+    pawR.circle(cx + 35, cy + 63, 4)
+    pawR.circle(cx + 28, cy + 61, 4)
+    pawR.circle(cx + 25, cy + 67, 4)
+    pawR.fill({ color: p.accent, alpha: 0.3 })
+    this.container.addChild(pawR)
 
     // --- Eye whites ---
-    const leftEyeG = new PIXI.Graphics()
-    leftEyeG.fill({ color: 0xffffff, alpha: 1 })
-    leftEyeG.ellipse(0, 0, 18, 22)
-    leftEyeG.x = cx - 25
-    leftEyeG.y = cy - 15
+    const leftEye = new PIXI.Graphics()
+    leftEye.ellipse(0, 0, 20, 24)
+    leftEye.fill({ color: 0xffffff, alpha: 1 })
+    leftEye.x = cx - 28
+    leftEye.y = cy - 18
+    this.container.addChild(leftEye)
 
-    const rightEyeG = new PIXI.Graphics()
-    rightEyeG.fill({ color: 0xffffff, alpha: 1 })
-    rightEyeG.ellipse(0, 0, 18, 22)
-    rightEyeG.x = cx + 25
-    rightEyeG.y = cy - 15
+    const rightEye = new PIXI.Graphics()
+    rightEye.ellipse(0, 0, 20, 24)
+    rightEye.fill({ color: 0xffffff, alpha: 1 })
+    rightEye.x = cx + 28
+    rightEye.y = cy - 18
+    this.container.addChild(rightEye)
 
-    // --- Pupils ---
+    // --- Pupils (large, cute anime-style) ---
     const leftPupil = new PIXI.Graphics()
-    leftPupil.fill({ color: 0x1e1b4b, alpha: 1 })
-    leftPupil.ellipse(0, 0, 8, 12)
-    leftPupil.x = cx - 25
-    leftPupil.y = cy - 15
+    leftPupil.ellipse(0, 0, 12, 16)
+    leftPupil.fill({ color: 0x2d1b4e, alpha: 1 })
+    leftPupil.x = cx - 28
+    leftPupil.y = cy - 16
+    this.container.addChild(leftPupil)
 
     const rightPupil = new PIXI.Graphics()
-    rightPupil.fill({ color: 0x1e1b4b, alpha: 1 })
-    rightPupil.ellipse(0, 0, 8, 12)
-    rightPupil.x = cx + 25
-    rightPupil.y = cy - 15
+    rightPupil.ellipse(0, 0, 12, 16)
+    rightPupil.fill({ color: 0x2d1b4e, alpha: 1 })
+    rightPupil.x = cx + 28
+    rightPupil.y = cy - 16
+    this.container.addChild(rightPupil)
 
-    // --- Eye shines ---
+    // --- Eye shines (primary — large) ---
     const leftEyeShine = new PIXI.Graphics()
-    leftEyeShine.fill({ color: 0xffffff, alpha: 0.9 })
-    leftEyeShine.ellipse(0, 0, 5, 6)
-    leftEyeShine.x = cx - 29
-    leftEyeShine.y = cy - 19
+    leftEyeShine.ellipse(0, 0, 6, 7)
+    leftEyeShine.fill({ color: 0xffffff, alpha: 0.95 })
+    leftEyeShine.x = cx - 33
+    leftEyeShine.y = cy - 23
+    this.container.addChild(leftEyeShine)
 
     const rightEyeShine = new PIXI.Graphics()
-    rightEyeShine.fill({ color: 0xffffff, alpha: 0.9 })
-    rightEyeShine.ellipse(0, 0, 5, 6)
-    rightEyeShine.x = cx + 21
-    rightEyeShine.y = cy - 19
+    rightEyeShine.ellipse(0, 0, 6, 7)
+    rightEyeShine.fill({ color: 0xffffff, alpha: 0.95 })
+    rightEyeShine.x = cx + 23
+    rightEyeShine.y = cy - 23
+    this.container.addChild(rightEyeShine)
+
+    // --- Eye shines (secondary — small) ---
+    const leftEyeShine2 = new PIXI.Graphics()
+    leftEyeShine2.ellipse(0, 0, 3, 3)
+    leftEyeShine2.fill({ color: 0xffffff, alpha: 0.7 })
+    leftEyeShine2.x = cx - 23
+    leftEyeShine2.y = cy - 10
+    this.container.addChild(leftEyeShine2)
+
+    const rightEyeShine2 = new PIXI.Graphics()
+    rightEyeShine2.ellipse(0, 0, 3, 3)
+    rightEyeShine2.fill({ color: 0xffffff, alpha: 0.7 })
+    rightEyeShine2.x = cx + 33
+    rightEyeShine2.y = cy - 10
+    this.container.addChild(rightEyeShine2)
+
+    // --- Nose ---
+    const nose = new PIXI.Graphics()
+    nose.poly([cx - 5, cy + 4, cx + 5, cy + 4, cx, cy + 10])
+    nose.fill({ color: p.accent, alpha: 0.8 })
+    this.container.addChild(nose)
 
     // --- Mouth ---
     const mouth = new PIXI.Graphics()
-    mouth.stroke({ color: 0x1e1b4b, alpha: 0.8, width: 3 })
-    mouth.arc(0, 0, 15, 0.2, Math.PI - 0.2)
-    mouth.x = cx
-    mouth.y = cy + 10
+    this.drawMouthShape(mouth, cx, cy, false)
+    this.container.addChild(mouth)
+
+    // --- Whiskers ---
+    const whiskerL = new PIXI.Graphics()
+    this.drawWhiskers(whiskerL, cx, cy, -1)
+    this.container.addChild(whiskerL)
+
+    const whiskerR = new PIXI.Graphics()
+    this.drawWhiskers(whiskerR, cx, cy, 1)
+    this.container.addChild(whiskerR)
 
     // --- Blushes ---
     const blushL = new PIXI.Graphics()
-    blushL.fill({ color: 0xf472b6, alpha: 0.3 })
-    blushL.ellipse(0, 0, 14, 8)
-    blushL.x = cx - 42
-    blushL.y = cy + 5
+    blushL.ellipse(0, 0, 16, 9)
+    blushL.fill({ color: 0xf472b6, alpha: 0.2 })
+    blushL.x = cx - 48
+    blushL.y = cy + 2
+    this.container.addChild(blushL)
 
     const blushR = new PIXI.Graphics()
-    blushR.fill({ color: 0xf472b6, alpha: 0.3 })
-    blushR.ellipse(0, 0, 14, 8)
-    blushR.x = cx + 42
-    blushR.y = cy + 5
+    blushR.ellipse(0, 0, 16, 9)
+    blushR.fill({ color: 0xf472b6, alpha: 0.2 })
+    blushR.x = cx + 48
+    blushR.y = cy + 2
+    this.container.addChild(blushR)
 
-    body.addChild(leftEyeG, rightEyeG, leftPupil, rightPupil, leftEyeShine, rightEyeShine, mouth, blushL, blushR)
+    return {
+      body, bodyShadow, earInnerL, earInnerR,
+      leftEye, rightEye, leftPupil, rightPupil,
+      leftEyeShine, rightEyeShine, leftEyeShine2, rightEyeShine2,
+      nose, mouth, whiskerL, whiskerR, blushL, blushR,
+      tail, pawL, pawR, belly
+    }
+  }
 
-    return { body, leftPupil, rightPupil, leftEyeShine, rightEyeShine, mouth, blushL, blushR }
+  // PixiJS v8 API: shape() THEN fill()/stroke() to commit
+  private drawBodyShape(g: PIXI.Graphics, cx: number, cy: number, color: number) {
+    g.clear()
+    // Main head/body
+    g.ellipse(cx, cy, 75, 85)
+    g.fill({ color, alpha: 1 })
+    // Left ear
+    g.poly([cx - 58, cy - 55, cx - 25, cy - 92, cx - 8, cy - 52])
+    g.fill({ color, alpha: 1 })
+    // Right ear
+    g.poly([cx + 58, cy - 55, cx + 25, cy - 92, cx + 8, cy - 52])
+    g.fill({ color, alpha: 1 })
+    // Ear outline strokes
+    g.poly([cx - 58, cy - 55, cx - 25, cy - 92, cx - 8, cy - 52])
+    g.stroke({ color: 0x000000, alpha: 0.08, width: 1.5 })
+    g.poly([cx + 58, cy - 55, cx + 25, cy - 92, cx + 8, cy - 52])
+    g.stroke({ color: 0x000000, alpha: 0.08, width: 1.5 })
+  }
+
+  private drawTail(g: PIXI.Graphics, cx: number, cy: number, color: number, phase: number) {
+    g.clear()
+    const baseX = cx + 55
+    const baseY = cy + 40
+    const tipOffset = Math.sin(phase) * 20
+
+    g.moveTo(baseX, baseY)
+    g.bezierCurveTo(
+      baseX + 30, baseY - 20,
+      baseX + 50 + tipOffset * 0.3, baseY - 60,
+      baseX + 35 + tipOffset, baseY - 90
+    )
+    g.stroke({ color, width: 14, cap: 'round' })
+  }
+
+  private drawWhiskers(g: PIXI.Graphics, cx: number, cy: number, side: number) {
+    g.clear()
+    const sx = cx + side * 30
+    const sy = cy + 8
+
+    g.moveTo(sx, sy - 4)
+    g.lineTo(sx + side * 40, sy - 12)
+    g.moveTo(sx, sy)
+    g.lineTo(sx + side * 42, sy)
+    g.moveTo(sx, sy + 4)
+    g.lineTo(sx + side * 38, sy + 10)
+    g.stroke({ color: 0x000000, alpha: 0.15, width: 1.5, cap: 'round' })
+  }
+
+  private drawMouthShape(g: PIXI.Graphics, cx: number, cy: number, open: boolean) {
+    g.clear()
+    if (this.state === 'sleeping') {
+      g.moveTo(cx - 6, cy + 14)
+      g.bezierCurveTo(cx - 3, cy + 17, cx + 3, cy + 17, cx + 6, cy + 14)
+      g.stroke({ color: 0x8b7355, alpha: 0.4, width: 2, cap: 'round' })
+      return
+    }
+
+    if (open) {
+      // Open mouth
+      g.ellipse(cx, cy + 16, 8, 10)
+      g.fill({ color: 0x4a2020, alpha: 0.6 })
+      // Tongue
+      g.ellipse(cx, cy + 20, 5, 4)
+      g.fill({ color: 0xf08080, alpha: 0.5 })
+    } else {
+      // Cat "w" mouth
+      g.moveTo(cx, cy + 10)
+      g.bezierCurveTo(cx - 3, cy + 16, cx - 10, cy + 18, cx - 14, cy + 13)
+      g.moveTo(cx, cy + 10)
+      g.bezierCurveTo(cx + 3, cy + 16, cx + 10, cy + 18, cx + 14, cy + 13)
+      g.stroke({ color: 0x8b7355, alpha: 0.5, width: 2, cap: 'round' })
+    }
   }
 
   private tick() {
-    if (!this.parts) return
-    const dt = this.app!.ticker.deltaMS / 1000
+    if (this.destroyed || !this.parts || !this.app) return
+    const dt = this.app.ticker.deltaMS / 1000
+    const cx = this.cx
+    const cy = this.cy
 
-    // Bounce
+    // Bounce physics
     if (Math.abs(this.bounceVelo) > 0.001 || Math.abs(this.bounceOffset) > 0.01) {
       this.bounceVelo += -this.bounceOffset * 20 * dt - this.bounceVelo * 8 * dt
       this.bounceOffset += this.bounceVelo * dt
       this.container.y = this.bounceOffset
     }
 
-    // Breathing (base)
-    const breathe = 1 + Math.sin(Date.now() * 0.003) * 0.02
+    // Tail wag
+    this.tailPhase += dt * (this.state === 'talking' ? 5 : this.state === 'idle' ? 2 : 1.5)
+    this.drawTail(this.parts.tail, cx, cy, STATE_PALETTES[this.state].body, this.tailPhase)
+
+    // Breathing
+    const breathe = 1 + Math.sin(Date.now() * 0.003) * 0.015
     if (this.state === 'sleeping') {
-      this.container.scale.set(breathe * 0.95)
-      this.container.alpha = 0.82 + Math.sin(Date.now() * 0.001) * 0.08
-    } else if (this.state !== 'talking') {
+      const sleepBreathe = 1 + Math.sin(Date.now() * 0.0015) * 0.03
+      this.container.scale.set(sleepBreathe * 0.97)
+      this.container.alpha = 0.85 + Math.sin(Date.now() * 0.001) * 0.05
+    } else if (this.state === 'talking') {
+      const talkBreathe = 1 + Math.sin(Date.now() * 0.006) * 0.02
+      this.container.scale.set(talkBreathe)
+      this.container.alpha = 1
+    } else {
       this.container.scale.set(breathe)
-      this.container.alpha = 0.92 + Math.sin(Date.now() * 0.002) * 0.06
+      this.container.alpha = 0.95 + Math.sin(Date.now() * 0.002) * 0.05
     }
+
+    // Blush pulsing
+    const blushAlpha = 0.15 + Math.sin(Date.now() * 0.002) * 0.05
+    this.parts.blushL.alpha = this.state === 'talking' ? blushAlpha + 0.15 : blushAlpha
+    this.parts.blushR.alpha = this.state === 'talking' ? blushAlpha + 0.15 : blushAlpha
 
     // Blink
     this.blinkTimer += dt
@@ -177,14 +383,12 @@ export class PetEngine {
     // Eye tracking
     this.updateEyeTracking()
 
-    // Idle action timer
+    // Idle actions
     this.idleTimer -= dt
     if (this.idleTimer <= 0 && this.state === 'idle') {
       this.doIdleAction()
       this.scheduleIdle()
     }
-
-    // Idle action progress
     if (this.idleActionTimer > 0) {
       this.idleActionTimer -= dt
       this.updateIdleAction()
@@ -194,52 +398,54 @@ export class PetEngine {
       }
     }
 
-    // Talking
+    // Talking mouth
     if (this.state === 'talking') {
       this.talkTimer += dt
       if (this.talkTimer > 0.15 + Math.random() * 0.1) {
         this.talkTimer = 0
         this.mouthOpen = !this.mouthOpen
-        this.drawMouth()
+        this.drawMouthShape(this.parts.mouth, cx, cy, this.mouthOpen)
       }
     }
 
     // Working shake
     if (this.state === 'working') {
-      const shake = Math.sin(Date.now() * 0.015) * 2
-      this.container.x = shake
+      this.container.x = Math.sin(Date.now() * 0.015) * 2
     }
 
-    // Thinking spin
+    // Thinking sway
     if (this.state === 'thinking') {
-      const spin = Math.sin(Date.now() * 0.004) * 0.04
-      this.container.rotation = spin
+      this.container.rotation = Math.sin(Date.now() * 0.004) * 0.04
     }
   }
 
   private updateEyeTracking() {
     if (!this.parts || this.state === 'sleeping') return
 
-    const bodyCenter = this.parts.body
-    const bx = bodyCenter.x
-    const by = bodyCenter.y
+    const cx = this.cx
+    const cy = this.cy
 
-    // Map mouse to eye offset (max 6px)
-    const dx = (this.mouseX - bx) / 100
-    const dy = (this.mouseY - by) / 100
+    const dx = (this.mouseX - cx) / 80
+    const dy = (this.mouseY - cy) / 80
     const clamp = (v: number, max: number) => Math.max(-max, Math.min(max, v))
 
-    const px = clamp(dx, 5)
-    const py = clamp(dy, 4)
+    const px = clamp(dx, 6)
+    const py = clamp(dy, 5)
 
-    this.parts.leftPupil.x = bx - 25 + px
-    this.parts.leftPupil.y = by - 15 + py
-    this.parts.rightPupil.x = bx + 25 + px
-    this.parts.rightPupil.y = by - 15 + py
-    this.parts.leftEyeShine.x = bx - 29 + px
-    this.parts.leftEyeShine.y = by - 19 + py
-    this.parts.rightEyeShine.x = bx + 21 + px
-    this.parts.rightEyeShine.y = by - 19 + py
+    this.parts.leftPupil.x = cx - 28 + px
+    this.parts.leftPupil.y = cy - 16 + py
+    this.parts.rightPupil.x = cx + 28 + px
+    this.parts.rightPupil.y = cy - 16 + py
+
+    this.parts.leftEyeShine.x = cx - 33 + px * 0.5
+    this.parts.leftEyeShine.y = cy - 23 + py * 0.3
+    this.parts.rightEyeShine.x = cx + 23 + px * 0.5
+    this.parts.rightEyeShine.y = cy - 23 + py * 0.3
+
+    this.parts.leftEyeShine2.x = cx - 23 + px * 0.7
+    this.parts.leftEyeShine2.y = cy - 10 + py * 0.5
+    this.parts.rightEyeShine2.x = cx + 33 + px * 0.7
+    this.parts.rightEyeShine2.y = cy - 10 + py * 0.5
   }
 
   private triggerBlink() {
@@ -255,15 +461,17 @@ export class PetEngine {
     if (!this._blinkActive || !this.parts) return
     this._blinkPhase += 0.06
     const t = Math.sin(this._blinkPhase * Math.PI)
-    const sy = 1 - Math.abs(t) * 0.95
-    this.parts.body.children.forEach(c => {
-      if (c === this.parts!.leftEyeShine || c === this.parts!.rightEyeShine) {
-        c.scale.y = sy
-      }
-    })
-    // Also scale eye white and pupil
-    const eyeScale = 1 - Math.abs(t) * 0.9
-    ;[this.parts.leftPupil, this.parts.rightPupil].forEach(c => { c.scale.y = eyeScale })
+    const eyeScale = 1 - Math.abs(t) * 0.95
+
+    this.parts.leftEye.scale.y = eyeScale
+    this.parts.rightEye.scale.y = eyeScale
+    this.parts.leftPupil.scale.y = eyeScale
+    this.parts.rightPupil.scale.y = eyeScale
+    this.parts.leftEyeShine.scale.y = eyeScale
+    this.parts.rightEyeShine.scale.y = eyeScale
+    this.parts.leftEyeShine2.alpha = eyeScale > 0.3 ? 0.7 : 0
+    this.parts.rightEyeShine2.alpha = eyeScale > 0.3 ? 0.7 : 0
+
     if (this._blinkPhase > 1) {
       this._blinkActive = false
       this.resetEyes()
@@ -272,15 +480,22 @@ export class PetEngine {
 
   private resetEyes() {
     if (!this.parts) return
-    this.parts.body.children.forEach(c => { c.scale.set(1) })
+    this.parts.leftEye.scale.set(1)
+    this.parts.rightEye.scale.set(1)
+    this.parts.leftPupil.scale.set(1)
+    this.parts.rightPupil.scale.set(1)
+    this.parts.leftEyeShine.scale.set(1)
+    this.parts.rightEyeShine.scale.set(1)
+    this.parts.leftEyeShine2.alpha = 0.7
+    this.parts.rightEyeShine2.alpha = 0.7
   }
 
   private scheduleIdle() {
-    this.idleTimer = 8 + Math.random() * 15
+    this.idleTimer = 6 + Math.random() * 12
   }
 
   private doIdleAction() {
-    const actions = ['blink', 'tilt', 'bounce', 'look']
+    const actions = ['blink', 'tilt', 'bounce', 'look', 'earTwitch']
     this.idleAction = actions[Math.floor(Math.random() * actions.length)]
     this.idleActionTimer = 1.5
 
@@ -294,107 +509,87 @@ export class PetEngine {
     const t = this.idleActionTimer / 1.5
 
     if (this.idleAction === 'tilt') {
-      this.container.rotation = Math.sin(t * Math.PI * 2) * 0.15
+      this.container.rotation = Math.sin(t * Math.PI * 2) * 0.12
     } else if (this.idleAction === 'look') {
-      this.container.rotation = Math.sin(t * Math.PI) * 0.1
+      this.container.rotation = Math.sin(t * Math.PI) * 0.08
+    } else if (this.idleAction === 'earTwitch') {
+      const twitch = Math.sin(t * Math.PI * 4) * 0.15
+      this.parts.earInnerL.scale.y = 1 + twitch
     }
   }
 
   private resetPose() {
+    if (!this.parts) return
     if (this.state !== 'thinking') {
       this.container.rotation = 0
     }
     if (this.state !== 'working') {
       this.container.x = 0
     }
-  }
-
-  private drawMouth() {
-    if (!this.parts) return
-    const g = this.parts.mouth
-    g.clear()
-
-    if (this.state === 'sleeping') {
-      g.stroke({ color: 0x1e1b4b, alpha: 0.6, width: 2 })
-      g.ellipse(0, 0, 8, 4)
-      return
-    }
-
-    if (this.state === 'talking' && this.mouthOpen) {
-      g.fill({ color: 0x1e1b4b, alpha: 0.7 })
-      g.ellipse(0, 0, 10, 14)
-    } else {
-      g.stroke({ color: 0x1e1b4b, alpha: 0.8, width: 3 })
-      g.arc(0, 0, 15, 0.2, Math.PI - 0.2)
-    }
+    this.parts.earInnerL.scale.set(1)
   }
 
   setAnimation(state: string) {
+    if (this.destroyed) return
     const prev = this.state
     this.state = state as PetState
     if (this.state !== prev) {
-      console.log('[PetEngine] state:', prev, '→', this.state)
+      console.log('[PetEngine] state:', prev, '->', this.state)
       this.applyState()
     }
   }
 
   private applyState() {
     if (!this.parts) return
+    const cx = this.cx
+    const cy = this.cy
+    const p = STATE_PALETTES[this.state] || STATE_PALETTES.idle
 
-    const color = STATE_COLORS[this.state] || STATE_COLORS.idle
-    this.redrawBody(color)
-    this.drawMouth()
+    // Redraw body with new color
+    this.drawBodyShape(this.parts.body, cx, cy, p.body)
 
-    // Sleeping: close eyes
+    // Update ear inners
+    this.parts.earInnerL.clear()
+    this.parts.earInnerL.poly([cx - 46, cy - 68, cx - 26, cy - 80, cx - 16, cy - 58])
+    this.parts.earInnerL.fill({ color: p.accent, alpha: 0.5 })
+
+    this.parts.earInnerR.clear()
+    this.parts.earInnerR.poly([cx + 46, cy - 68, cx + 26, cy - 80, cx + 16, cy - 58])
+    this.parts.earInnerR.fill({ color: p.accent, alpha: 0.5 })
+
+    // Update belly
+    this.parts.belly.clear()
+    this.parts.belly.ellipse(cx, cy + 20, 45, 40)
+    this.parts.belly.fill({ color: p.bodyLight, alpha: 0.7 })
+
+    // Update nose
+    this.parts.nose.clear()
+    this.parts.nose.poly([cx - 5, cy + 4, cx + 5, cy + 4, cx, cy + 10])
+    this.parts.nose.fill({ color: p.accent, alpha: 0.8 })
+
+    // Update mouth
+    this.mouthOpen = false
+    this.drawMouthShape(this.parts.mouth, cx, cy, false)
+
+    // State-specific resets
     if (this.state === 'sleeping') {
       this.container.rotation = 0
       this.container.x = 0
-    }
-
-    // Working: slight vibration
-    if (this.state === 'working') {
+    } else if (this.state === 'working') {
       this.container.rotation = 0
-      this.mouthOpen = false
-      this.drawMouth()
-    }
-
-    // Thinking: tilt + spin
-    if (this.state === 'thinking') {
+    } else if (this.state === 'thinking') {
       this.container.x = 0
-    }
-
-    // Talking: reset
-    if (this.state === 'talking') {
+    } else if (this.state === 'talking') {
       this.container.rotation = 0
       this.container.x = 0
       this.talkTimer = 0
-    }
-
-    // Idle: reset all
-    if (this.state === 'idle') {
+    } else if (this.state === 'idle') {
       this.container.rotation = 0
       this.container.x = 0
       this.container.y = 0
       this.bounceOffset = 0
       this.bounceVelo = 0
     }
-  }
-
-  private redrawBody(color: number) {
-    if (!this.parts) return
-    const g = this.parts.body
-    const cx = g.x
-    const cy = g.y
-
-    // Preserve children, just redraw the body/ears shapes
-    // Actually with PixiJS v8, we need to clear and redraw
-    g.clear()
-    g.fill({ color, alpha: 1 })
-    g.ellipse(cx, cy - 10, 80, 90)
-    g.fill({ color, alpha: 1 })
-    g.poly([cx - 55, cy - 70, cx - 25, cy - 90, cx - 10, cy - 55])
-    g.fill({ color, alpha: 1 })
-    g.poly([cx + 55, cy - 70, cx + 25, cy - 90, cx + 10, cy - 55])
   }
 
   trackMouse(x: number, y: number) {
@@ -419,7 +614,23 @@ export class PetEngine {
   }
 
   destroy() {
-    this.container.destroy({ children: true })
-    this.app?.destroy(true)
+    console.log('[PetEngine] destroy called, was initialized:', !!this.parts)
+    this.destroyed = true
+    this.parts = null
+
+    if (!this.initialized) {
+      this.app = null
+      return
+    }
+
+    try {
+      this.app?.ticker?.stop()
+      this.container?.destroy({ children: true })
+      this.app?.destroy(false)
+    } catch (e) {
+      console.warn('[PetEngine] destroy cleanup:', e)
+    }
+    this.app = null
+    this.initialized = false
   }
 }

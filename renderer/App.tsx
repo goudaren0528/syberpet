@@ -332,7 +332,7 @@ export default function App() {
             ['互动输入', () => {}],
             ['切换模式', () => {}],
             ['设置', toggleSettings],
-            ['退出', () => {}]
+            ['退出', () => { void window.electronAPI?.quitApp?.() }]
           ] as [string, () => void][]).map(([label, fn], i) => (
             <div key={i} style={{ padding: '6px 14px', cursor: 'pointer' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}

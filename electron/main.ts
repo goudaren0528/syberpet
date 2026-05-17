@@ -13,6 +13,12 @@ let tray: Tray | null = null
 const WIN_W = 400
 const WIN_H = 500
 
+function ensureWindowContentSize(win: BrowserWindow) {
+  const [contentWidth, contentHeight] = win.getContentSize()
+  if (contentWidth === WIN_W && contentHeight === WIN_H) return
+  win.setContentSize(WIN_W, WIN_H)
+}
+
 function createWindow() {
   const display = screen.getPrimaryDisplay()
   const { width, height } = display.workAreaSize
@@ -57,11 +63,22 @@ function createWindow() {
 
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('[main] window loaded')
+    ensureWindowContentSize(mainWindow!)
   })
 
   mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {
     console.error(`[main] load failed: ${code} - ${desc}`)
   })
+
+  mainWindow.on('resize', () => {
+    ensureWindowContentSize(mainWindow!)
+  })
+
+  mainWindow.on('move', () => {
+    ensureWindowContentSize(mainWindow!)
+  })
+
+  mainWindow.setContentSize(WIN_W, WIN_H)
 
   mainWindow.webContents.openDevTools({ mode: 'detach' })
   mainWindow.setAlwaysOnTop(true, 'screen-saver')
@@ -164,12 +181,13 @@ ipcMain.handle('window:move', (_event, deltaX: number, deltaY: number) => {
   if (mainWindow) {
     const [x, y] = mainWindow.getPosition()
     mainWindow.setPosition(x + deltaX, y + deltaY)
+    ensureWindowContentSize(mainWindow)
   }
 })
 
 ipcMain.handle('window:set-size', (_event, w: number, h: number) => {
   if (mainWindow) {
-    mainWindow.setSize(w, h)
+    mainWindow.setContentSize(w, h)
   }
 })
 
@@ -223,6 +241,11 @@ ipcMain.handle('pet:load-state', async () => {
 
 ipcMain.handle('pet:save-state', async (_event, state: PetStateData) => {
   writePetState(state)
+  return { success: true }
+})
+
+ipcMain.handle('app:quit', async () => {
+  app.quit()
   return { success: true }
 })
 
