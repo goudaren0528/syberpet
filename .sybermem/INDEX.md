@@ -62,6 +62,7 @@
 - [change-035] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - **Change**: 补充猜拳 mini-game skeleton 的设计 spec、todo 进度和 SyberMem 决策记录，因为体验骨架的最后一块样板玩法需要先把接入边界和后续实现路径定清楚 (2026-05-18)
 - **Decision**: 猜拳 skeleton 采用本地轻量流程并复用右键菜单、InputBar 与气泡反馈，因为要在不回退成重聊天面板也不引入过度结构的前提下补齐聊天式互动玩法样板 (2026-05-18)
+- [change-037] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-18)
 <!-- add new conclusions here -->
 
 ## Change Records
@@ -103,6 +104,7 @@
 | 034 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-034-agent-config-manager-main.md) |
 | 035 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-035-agent-config.md) |
 | 036 | 2026-05-18 | 补充猜拳 mini-game skeleton 设计与项目记录 | documented | [change-036](changes/2026-05-18-036-agent-config-2026-05-18-rps-mini-game-skeleton-design.md) |
+| 037 | 2026-05-18 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-18-037-agent-config.md) |
 <!-- add new records here -->
 
 ## Decision Records
