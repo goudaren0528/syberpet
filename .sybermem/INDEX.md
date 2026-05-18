@@ -59,6 +59,9 @@
 - [change-032] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
 - **Change**: 接入规则型属性增长并补充 `todo.md` 进度文件，因为体验骨架需要先建立可解释的轻养成反馈，并把后续任务与 design/plan 关联起来持续推进 (2026-05-17)
 - [change-034] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- [change-035] Auto-recorded workspace file changes at session stop so the project keeps a lightweight change trail without manual recording (2026-05-17)
+- **Change**: 补充猜拳 mini-game skeleton 的设计 spec、todo 进度和 SyberMem 决策记录，因为体验骨架的最后一块样板玩法需要先把接入边界和后续实现路径定清楚 (2026-05-18)
+- **Decision**: 猜拳 skeleton 采用本地轻量流程并复用右键菜单、InputBar 与气泡反馈，因为要在不回退成重聊天面板也不引入过度结构的前提下补齐聊天式互动玩法样板 (2026-05-18)
 <!-- add new conclusions here -->
 
 ## Change Records
@@ -98,12 +101,15 @@
 | 032 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-032-agent-config-manager-main-and-more.md) |
 | 033 | 2026-05-17 | 规则型属性增长接入，并补充进度跟踪 | implemented | [change-033](changes/2026-05-17-033-rule-based-pet-stat-rewards-and-progress-tracking.md) |
 | 034 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-034-agent-config-manager-main.md) |
+| 035 | 2026-05-17 | Auto-record workspace file changes on stop | implemented | [link](changes/2026-05-17-035-agent-config.md) |
+| 036 | 2026-05-18 | 补充猜拳 mini-game skeleton 设计与项目记录 | documented | [change-036](changes/2026-05-18-036-agent-config-2026-05-18-rps-mini-game-skeleton-design.md) |
 <!-- add new records here -->
 
 ## Decision Records
 | Number | Date | Title | Status | Link |
 |--------|------|-------|--------|------|
 | 001 | 2026-05-17 | Phase 2 采用长期记忆优先，并将画像与工具作为派生层和接口层 | decided | [decision-001](decisions/2026-05-17-001-phase-2-memory-core-first.md) |
+| 002 | 2026-05-18 | 猜拳 skeleton 采用本地轻量流程，并复用右键菜单、InputBar 与气泡反馈 | decided | [decision-002](decisions/2026-05-18-002-rps-skeleton-local-flow.md) |
 <!-- add new records here -->
 
 ## Requirement Records
